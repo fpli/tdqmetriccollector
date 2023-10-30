@@ -1,4 +1,4 @@
-package com.ebay.adi.adlc.demo;
+package com.ebay.adi.adlc.tdq;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;

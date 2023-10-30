@@ -93,7 +93,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>com.ebay.adi.adlc.demo.SparkApp</mainClass>
+                            <mainClass>com.ebay.adi.adlc.tdq.SparkApp</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
