@@ -11,6 +11,7 @@ public class SparkApp {
     public static void main(String[] args) {
         SparkSession spark = SparkSession
                 .builder()
+                .enableHiveSupport()
                 .appName(SparkApp.class.getName())
                 .getOrCreate();
 
