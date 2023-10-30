@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.ebay.adi.adlc</groupId>
-    <artifactId>adlcdemo</artifactId>
+    <artifactId>tdqmetriccollector</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -16,6 +16,8 @@
         <hadoop.version>2.7.4</hadoop.version>
         <spark.version>3.1.1.0.2.0</spark.version>
         <scala.binary.version>2.12</scala.binary.version>
+        <jackson.version>2.12.7</jackson.version>
+        <elasticsearch.version>7.5.1</elasticsearch.version>
     </properties>
 
     <dependencies>
@@ -36,6 +38,27 @@
             <artifactId>spark-hive_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
+            <version>${jackson.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>${elasticsearch.version}</version>
+            <scope>compile</scope>
         </dependency>
 
         <!--
