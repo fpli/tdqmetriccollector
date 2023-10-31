@@ -2,6 +2,8 @@ package com.ebay.adi.adlc.tdq;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
 import java.util.ArrayList;
@@ -33,6 +35,11 @@ public class SparkApp {
         }).reduce((integer, integer2) -> integer + integer2);
 
         System.out.println("Pi is roughly " + 4.0 * count / n);
+
+        Dataset<Row> dataset = spark.sql("select name from user");
+        dataset.foreach(row -> {
+            String string = row.getString(0);
+        });
 
         spark.stop();
     }
