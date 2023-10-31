@@ -25,7 +25,7 @@ public class PipelineFactory {
 
     private PipelineFactory() {
         this.pipelineMap = new HashMap<>();
-        pipelineMap.put("pageProfiling",   new PageProfilingPipeline());
+        pipelineMap.put("pageProfiling", new PageProfilingPipeline());
         pipelineMap.put("metricCollector", new MetricCollectorPipeline());
     }
 
