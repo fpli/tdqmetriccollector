@@ -1,5 +1,10 @@
 package com.ebay.adi.adlc.tdq;
 
+import com.ebay.adi.adlc.tdq.service.BaseOption;
+import com.ebay.adi.adlc.tdq.service.impl.BasePipeline;
+import com.ebay.adi.adlc.tdq.util.PipelineFactory;
+import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
+import org.apache.commons.cli.*;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -11,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SparkApp {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("master");
         sparkConf.setAppName("TDQ Metric Collector");
@@ -22,6 +27,9 @@ public class SparkApp {
                 .enableHiveSupport()
                 .getOrCreate();
 
+        SparkSessionStore.getInstance().storeSparkSession(spark);
+
+        // ignore below
         JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
 
         int slices = (args.length == 1) ? Integer.parseInt(args[0]) : 2;
@@ -45,6 +53,20 @@ public class SparkApp {
         dataset.foreach(row -> {
             String string = row.getString(0);
         });
+        // ignore above
+
+        DefaultParser defaultParser = new DefaultParser();
+        Options options = new Options();
+        Option option = new Option("bizId", "bizId", true, "the identify of this business");
+        options.addOption(option);
+        CommandLine commandLine = defaultParser.parse(options, args);
+        String bizId = commandLine.getOptionValue(option);
+
+        BasePipeline<? extends BaseOption> pipeline = PipelineFactory.getInstance().findPipeline(bizId);
+
+        BaseOption baseOption = pipeline.parseCommand(args);
+
+        pipeline.process(baseOption);
 
         spark.stop();
     }
