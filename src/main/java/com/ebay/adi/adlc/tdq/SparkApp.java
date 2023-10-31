@@ -1,5 +1,6 @@
 package com.ebay.adi.adlc.tdq;
 
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
@@ -11,10 +12,14 @@ import java.util.List;
 
 public class SparkApp {
     public static void main(String[] args) {
+        SparkConf sparkConf = new SparkConf();
+        sparkConf.setMaster("master");
+        sparkConf.setAppName("TDQ Metric Collector");
+
         SparkSession spark = SparkSession
                 .builder()
+                .config(sparkConf)
                 .enableHiveSupport()
-                .appName(SparkApp.class.getName())
                 .getOrCreate();
 
         JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
