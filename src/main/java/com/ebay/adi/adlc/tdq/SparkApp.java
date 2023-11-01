@@ -17,6 +17,8 @@ import java.util.List;
 
 public class SparkApp {
     public static void main(String[] args) throws ParseException {
+        System.out.println(PipelineFactory.getInstance());
+
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("master");
         sparkConf.setAppName("TDQ Metric Collector");
