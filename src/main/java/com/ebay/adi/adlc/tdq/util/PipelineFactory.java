@@ -56,6 +56,7 @@ public class PipelineFactory {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (entry.getValue() instanceof Map){
                 recurseReplace(map, entry.getKey(), (Map<String, Object>) entry.getValue());
+                map.remove(entry.getKey());
             }
         }
     }
