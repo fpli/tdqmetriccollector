@@ -13,3 +13,6 @@ LABEL com.ebay.adi.adlc.include="*.jar"
 
 # Alternatively you specify a comma separated list of tags, e.g. "latest,1.0.0"
 LABEL com.ebay.adi.adlc.tag="1.0.0"
+
+# Send Email to fangpli@ebay.com and yxiao6@ebay.com
+LABEL org.opencontainers.image.authors="fangpli@ebay.com,yxiao6"
