@@ -4,6 +4,7 @@ import com.ebay.adi.adlc.tdq.service.BaseOption;
 import com.ebay.adi.adlc.tdq.service.impl.BasePipeline;
 import com.ebay.adi.adlc.tdq.service.impl.MetricCollectorPipeline;
 import com.ebay.adi.adlc.tdq.service.impl.PageProfilingPipeline;
+import com.ebay.adi.adlc.tdq.service.impl.TagProfilingPipeline;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ public class PipelineFactory {
         this.pipelineMap = new HashMap<>();
         pipelineMap.put("pageProfiling", new PageProfilingPipeline());
         pipelineMap.put("metricCollector", new MetricCollectorPipeline());
+        pipelineMap.put("tagProfiling", new TagProfilingPipeline());
     }
 
     private Map<String, BasePipeline<? extends BaseOption>> pipelineMap;

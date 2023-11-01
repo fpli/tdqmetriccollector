@@ -1,5 +1,5 @@
 package com.ebay.adi.adlc.tdq.service;
 
-public class PageProfilingOption extends BaseOption {
+public class TagProfilingOption extends BaseOption {
     private boolean bot;
 }
