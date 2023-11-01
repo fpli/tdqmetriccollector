@@ -1,0 +1,13 @@
+pronto:
+  scheme: https
+  hostname: estdq-datalvs.vip.ebay.com
+  port: 443
+  api-key: 94259ed8d74742c585a7b86faf3d0001
+  api-value: 7s3AG1ZqOwjz9X59UbPNtcJcb1a0OvMYqDSvGigS2ArjctmBy9YkYIGHxLWcCdky
+
+mysql:
+  jdbc:
+    url: jdbc:mysql://mysqltdqdb.db.stratus.ebay.com:3306/tdq?verifyServerCertificate=false&useSSL=true&rewriteBatchedStatements=true&useUnicode=true&characterEncoding=utf8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    u: tdq_app
+    p: pA_tdqap_22
