@@ -66,7 +66,7 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
         String sql = "SELECT hr, pageId, count(1) as cnt FROM ubi_w.stg_ubi_event_dump_w WHERE dt = '%s' AND type = 'nonbot' AND hr BETWEEN %d and %d GROUP BY hr, pageId ORDER BY hr ASC";
         String actualSql = String.format(sql, dt, hour, hour1);
         Dataset<Row> dataset = spark.sql(actualSql);
-        Row[] rows = dataset.collect();
+        List<Row> rows = dataset.collectAsList();
         try {
             RestHighLevelClient restHighLevelClient = PipelineFactory.getInstance().getRestHighLevelClient();
             String index = "xxx";
@@ -88,7 +88,7 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
             LongAdder errorCounter = new LongAdder();
             ObjectMapper objectMapper = new ObjectMapper();
             Base64.Encoder encoder = Base64.getEncoder();
-            Arrays.stream(rows).parallel().forEach(row -> {
+            rows.stream().parallel().forEach(row -> {
                 String hr = row.getString(0);
                 int page_id = row.getInt(1);
                 long event_cnt = row.getLong(2);
