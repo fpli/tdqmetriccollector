@@ -1,7 +1,7 @@
 package com.ebay.adi.adlc.tdq.service;
 
 public class BackFillRealtimeMetricOption extends BaseOption {
-
+    // yyyy-MM-dd HH:mm:ss
     private String start;
 
     private String end;

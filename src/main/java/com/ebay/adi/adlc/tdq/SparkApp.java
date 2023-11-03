@@ -9,7 +9,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
 
 public class SparkApp {
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) throws Exception {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("master");
         sparkConf.setAppName("TDQ Metric Collector");
