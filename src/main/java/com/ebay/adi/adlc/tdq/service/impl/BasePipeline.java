@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class BasePipeline<T extends BaseOption> implements Pipeline<T> {
 
-    protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
+    protected Logger logger = LoggerFactory.getLogger(this.getClass());
 
     protected DefaultParser getDefaultParser() {
         DefaultParser.Builder builder = DefaultParser.builder();
@@ -24,6 +24,5 @@ public abstract class BasePipeline<T extends BaseOption> implements Pipeline<T> 
     public void process(BaseOption parameter) {
         throw new UnsupportedOperationException();
     }
-
 
 }

@@ -1,11 +1,13 @@
 package com.ebay.adi.adlc.tdq.service.impl;
 
 import com.ebay.adi.adlc.tdq.service.BackFillRealtimeMetricOption;
+import com.ebay.adi.adlc.tdq.util.PipelineFactory;
 import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
 import org.apache.commons.cli.*;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.elasticsearch.client.RestHighLevelClient;
 
 public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtimeMetricOption> {
 
@@ -35,5 +37,7 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
     public void process(BackFillRealtimeMetricOption backFillRealtimeMetricOption) {
         SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
         Dataset<Row> dataset = spark.sql("");
+
+        RestHighLevelClient restHighLevelClient = PipelineFactory.getInstance().getRestHighLevelClient();
     }
 }
