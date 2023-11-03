@@ -121,7 +121,9 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
                     errorCounter.increment();
                 }
             });
-
+            if (errorCounter.longValue() > 0){
+                logger.error("the error count is " + errorCounter.longValue());
+            }
         } catch (IOException e) {
             logger.error("something went wrong: ", e);
             throw new RuntimeException(e);
