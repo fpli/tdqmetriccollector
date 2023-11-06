@@ -69,7 +69,7 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
         List<Row> rows = dataset.collectAsList();
         try {
             RestHighLevelClient restHighLevelClient = PipelineFactory.getInstance().getRestHighLevelClient();
-            String index = "xxx";
+            String index = "my-index_bak";
             GetIndexRequest getIndexRequest = new GetIndexRequest(index);
             boolean exists = restHighLevelClient.indices().exists(getIndexRequest, RequestOptions.DEFAULT);
             if (!exists){
