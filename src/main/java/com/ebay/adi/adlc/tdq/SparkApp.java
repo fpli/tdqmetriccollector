@@ -11,11 +11,13 @@ import org.apache.spark.sql.SparkSession;
 public class SparkApp {
     public static void main(String[] args) throws Exception {
         SparkConf sparkConf = new SparkConf();
-        sparkConf.setMaster("master");
+        sparkConf.setMaster("yarn");
         sparkConf.setAppName("TDQ Metric Collector");
 
         SparkSession spark = SparkSession
                 .builder()
+                .config("hive.exec.dynamic.partition", "dynamic")
+                .config("hive.exec.dynamic.partition.mode", "nonstrict")
                 .config(sparkConf)
                 .enableHiveSupport()
                 .getOrCreate();
