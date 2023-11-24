@@ -24,5 +24,4 @@ public abstract class BasePipeline<T extends BaseOption> implements Pipeline<T> 
     public void process(BaseOption parameter) {
         throw new UnsupportedOperationException();
     }
-
 }

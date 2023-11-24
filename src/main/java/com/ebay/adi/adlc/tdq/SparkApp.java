@@ -7,10 +7,13 @@ import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
 
+import java.util.Optional;
+
 public class SparkApp {
     public static void main(String[] args) throws Exception {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("yarn");
+//        sparkConf.setMaster("local[*]");
         sparkConf.setAppName("TDQ Metric Collector");
 
         SparkSession spark = SparkSession
@@ -30,6 +33,7 @@ public class SparkApp {
         BaseOption baseOption = pipeline.parseCommand(args);
 
         pipeline.process(baseOption);
+
 
         spark.stop();
     }

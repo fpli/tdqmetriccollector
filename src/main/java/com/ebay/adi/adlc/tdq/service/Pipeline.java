@@ -4,4 +4,6 @@ public interface Pipeline<T> {
     T parseCommand(String[] args);
 
     <U extends T> void process(U parameter);
+
+//    void process(Optional<?> parameter);
 }

@@ -1,6 +1,7 @@
 package com.ebay.adi.adlc.tdq.service.impl;
 
 import com.ebay.adi.adlc.tdq.service.BackFillRealtimeMetricOption;
+import com.ebay.adi.adlc.tdq.service.BaseOption;
 import com.ebay.adi.adlc.tdq.util.PipelineFactory;
 import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,7 +52,8 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
     }
 
     @Override
-    public void process(BackFillRealtimeMetricOption backFillRealtimeMetricOption) {
+    public void process(BaseOption parameter) {
+        BackFillRealtimeMetricOption backFillRealtimeMetricOption = (BackFillRealtimeMetricOption) parameter;
         SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
         String start = backFillRealtimeMetricOption.getStart();
         String end = backFillRealtimeMetricOption.getEnd();

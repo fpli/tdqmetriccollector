@@ -1,5 +1,6 @@
 package com.ebay.adi.adlc.tdq.service.impl;
 
+import com.ebay.adi.adlc.tdq.service.BaseOption;
 import com.ebay.adi.adlc.tdq.service.MetricCollectorOption;
 import com.ebay.adi.adlc.tdq.util.PipelineFactory;
 import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
@@ -17,7 +18,8 @@ public class MetricCollectorPipeline extends BasePipeline<MetricCollectorOption>
     }
 
     @Override
-    public void process(MetricCollectorOption parameter) {
+    public void process(BaseOption parameter) {
+        MetricCollectorOption metricCollectorOption = (MetricCollectorOption) parameter;
         //super.process(parameter);
         SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
         try {
