@@ -11,7 +11,6 @@ public class SparkApp {
     public static void main(String[] args) throws Exception {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("yarn");
-//        sparkConf.setMaster("local[*]");
         sparkConf.setAppName("TDQ Metric Collector");
 
         SparkSession spark = SparkSession
