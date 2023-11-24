@@ -33,14 +33,14 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
         BackFillRealtimeMetricOption backFillRealtimeMetricOption = new BackFillRealtimeMetricOption();
         DefaultParser defaultParser = getDefaultParser();
         Options options = new Options();
-        Option startOpt = new Option("start", "start", true, "the start time of the range");
-        Option endOpt = new Option("end", "end", true, "the end time of the range");
+        options.addOption("start", "start", true, "the start time of the range");
+        options.addOption("end", "end", true, "the end time of the range");
         // ...
         try {
             CommandLine commandLine = defaultParser.parse(options, args);
-            String start = commandLine.getOptionValue(startOpt);
+            String start = commandLine.getOptionValue("start");
             backFillRealtimeMetricOption.setStart(start);
-            String end = commandLine.getOptionValue(endOpt);
+            String end = commandLine.getOptionValue("end");
             backFillRealtimeMetricOption.setEnd(end);
             // ...
         } catch (ParseException e) {
