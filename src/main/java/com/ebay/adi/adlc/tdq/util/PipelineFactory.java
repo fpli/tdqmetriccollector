@@ -62,7 +62,7 @@ public class PipelineFactory {
         String schema   = configMap.get("pronto.scheme").toString();
         String username = configMap.get("pronto.api-key").toString();
         String password = configMap.get("pronto.api-value").toString();
-        RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(hostname, 9200, schema));
+        RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(hostname, 443, schema));
         BasicCredentialsProvider basicCredentialsProvider = new BasicCredentialsProvider();
         basicCredentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
         restClientBuilder.setHttpClientConfigCallback( httpAsyncClientBuilder -> httpAsyncClientBuilder.setDefaultCredentialsProvider(basicCredentialsProvider));
