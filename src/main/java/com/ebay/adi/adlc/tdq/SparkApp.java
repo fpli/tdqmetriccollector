@@ -6,9 +6,16 @@ import com.ebay.adi.adlc.tdq.util.PipelineFactory;
 import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 public class SparkApp {
-    public static void main(String[] args) throws Exception {
+
+    private static Logger logger = LoggerFactory.getLogger(SparkApp.class);
+    public static void main(String[] args) {
+        logger.info("args: {}", Arrays.toString(args));
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("yarn");
 //        sparkConf.setMaster("local[*]");
