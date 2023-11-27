@@ -7,8 +7,6 @@ import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
 
-import java.util.Optional;
-
 public class SparkApp {
     public static void main(String[] args) throws Exception {
         SparkConf sparkConf = new SparkConf();
@@ -34,6 +32,7 @@ public class SparkApp {
 
         pipeline.process(baseOption);
 
+//        pipeline.process(Optional.of(baseOption));
 
         spark.stop();
     }
