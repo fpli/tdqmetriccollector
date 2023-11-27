@@ -13,6 +13,8 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class PipelineFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PipelineFactory.class);
 
     private static volatile PipelineFactory instance;
 
@@ -83,6 +87,7 @@ public class PipelineFactory {
             Map<String, Object> properties = objectMapper.readValue(inputStream, new TypeReference<Map<String, Object>>() {});
             configMap = new ConcurrentHashMap<>(properties);
             flatMap(configMap);
+            LOGGER.info("configMap: {}", configMap);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
