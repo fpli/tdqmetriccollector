@@ -5,7 +5,6 @@ import com.ebay.adi.adlc.tdq.service.BaseOption;
 import com.ebay.adi.adlc.tdq.util.PipelineFactory;
 import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.cli.*;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -24,7 +23,10 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 
 public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtimeMetricOption> {
@@ -32,22 +34,10 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
     @Override
     public BackFillRealtimeMetricOption parseCommand(String[] args) {
         BackFillRealtimeMetricOption backFillRealtimeMetricOption = new BackFillRealtimeMetricOption();
-        DefaultParser defaultParser = getDefaultParser();
-        Options options = new Options();
-        options.addOption("start", "start", true, "the start time of the range");
-        options.addOption("end", "end", true, "the end time of the range");
-        // ...
-        try {
-            CommandLine commandLine = defaultParser.parse(options, args);
-            String start = commandLine.getOptionValue("start");
-            backFillRealtimeMetricOption.setStart(start);
-            String end = commandLine.getOptionValue("end");
-            backFillRealtimeMetricOption.setEnd(end);
-            // ...
-        } catch (ParseException e) {
-            logger.error("parsing command line arguments {} occurred some errors:", args, e);
-            throw new RuntimeException(e);
-        }
+        String start = args[1];
+        backFillRealtimeMetricOption.setStart(start);
+        String end = args[2];
+        backFillRealtimeMetricOption.setEnd(end);
         return backFillRealtimeMetricOption;
     }
 
@@ -67,6 +57,7 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
         String dtt = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(localDate);
         String sql = "SELECT hr, pageId, count(1) as cnt FROM ubi_w.stg_ubi_event_dump_w WHERE dt = '%s' AND type = 'nonbot' AND hr BETWEEN %d and %d GROUP BY hr, pageId ORDER BY hr ASC";
         String actualSql = String.format(sql, dt, hour, hour1);
+        logger.info(actualSql);
         Dataset<Row> dataset = spark.sql(actualSql);
         List<Row> rows = dataset.collectAsList();
         try {

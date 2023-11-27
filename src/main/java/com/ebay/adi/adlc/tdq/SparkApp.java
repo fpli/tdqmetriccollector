@@ -13,9 +13,10 @@ import java.util.Arrays;
 
 public class SparkApp {
 
-    private static Logger logger = LoggerFactory.getLogger(SparkApp.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(SparkApp.class);
+
     public static void main(String[] args) {
-        logger.info("args: {}", Arrays.toString(args));
+        LOGGER.info("args: {}", Arrays.toString(args));
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("yarn");
 //        sparkConf.setMaster("local[*]");
