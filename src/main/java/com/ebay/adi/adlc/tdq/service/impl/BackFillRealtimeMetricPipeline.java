@@ -5,6 +5,10 @@ import com.ebay.adi.adlc.tdq.service.BaseOption;
 import com.ebay.adi.adlc.tdq.util.PipelineFactory;
 import com.ebay.adi.adlc.tdq.util.SparkSessionStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.Parser;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -34,10 +38,22 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
     @Override
     public BackFillRealtimeMetricOption parseCommand(String[] args) {
         BackFillRealtimeMetricOption backFillRealtimeMetricOption = new BackFillRealtimeMetricOption();
-        String start = args[1];
-        backFillRealtimeMetricOption.setStart(start);
-        String end = args[2];
-        backFillRealtimeMetricOption.setEnd(end);
+        Parser defaultParser = getDefaultParser();
+        Options options = new Options();
+        options.addOption("start", "start", true, "the start time of the range");
+        options.addOption("end", "end", true, "the end time of the range");
+        // ...
+        try {
+            CommandLine commandLine = defaultParser.parse(options, args);
+            String start = commandLine.getOptionValue("start");
+            backFillRealtimeMetricOption.setStart(start);
+            String end = commandLine.getOptionValue("end");
+            backFillRealtimeMetricOption.setEnd(end);
+            // ...
+        } catch (ParseException e) {
+            logger.error("parsing command line arguments {} occurred some errors:", args, e);
+            throw new RuntimeException(e);
+        }
         return backFillRealtimeMetricOption;
     }
 
