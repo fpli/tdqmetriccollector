@@ -57,7 +57,7 @@ public class PipelineFactory {
         String hostname = configMap.get("pronto.hostname").toString();
         String schema   = configMap.get("pronto.scheme").toString();
         String username = configMap.get("pronto.api-key").toString();
-        String password = configMap.get("api-value").toString();
+        String password = configMap.get("pronto.api-value").toString();
         RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(hostname, 9200, schema));
         BasicCredentialsProvider basicCredentialsProvider = new BasicCredentialsProvider();
         basicCredentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
