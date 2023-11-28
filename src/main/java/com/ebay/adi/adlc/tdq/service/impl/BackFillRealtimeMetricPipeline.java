@@ -11,22 +11,26 @@ import org.apache.commons.cli.Parser;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,31 +126,40 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
                 }
             }
             LongAdder errorCounter = new LongAdder();
-            Base64.Encoder encoder = Base64.getEncoder();
+            LongAdder successCount = new LongAdder();
             rows.stream().parallel().forEach(row -> {
                 try {
                     int hr = row.getInt(0);
                     int page_id = row.getInt(1);
                     long event_cnt = row.getLong(2);
                     long late_event_cnt = row.getLong(3);
-                    //IndexRequest indexRequest = new IndexRequest(index);
-                    String id = encoder.encodeToString((page_id + "." + dt + hr).getBytes());
-                    //indexRequest.id(id);
-                    GetRequest getRequest = new GetRequest(index, id);
-                    getRequest.fetchSourceContext(new FetchSourceContext(false));
-                    getRequest.storedFields("_none_");
-                    boolean exist = restHighLevelClient.exists(getRequest, RequestOptions.DEFAULT);
-                    if (exist) {
-                        UpdateRequest updateRequest = new UpdateRequest(index, id);
-                        Map<String, Object> parameters = new HashMap<>();
-                        parameters.put("late_event_cnt", late_event_cnt);
-                        parameters.put("batch_event_cnt", event_cnt);
 
-                        Script script = new Script(ScriptType.INLINE, "painless", "ctx._source.acc_rt_event_cnt = ctx._source.rt_event_cnt +  params.late_event_cnt;ctx._source.batch_event_cnt = params.batch_event_cnt", parameters);
-                        updateRequest.script(script);
+                    SearchRequest searchRequest = new SearchRequest();
+                    searchRequest.indices(index);
+                    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+                    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+                    boolQueryBuilder.must(QueryBuilders.termQuery("dt", dt));
+                    boolQueryBuilder.must(QueryBuilders.termQuery("hr", hr));
+                    boolQueryBuilder.must(QueryBuilders.termQuery("page_id", page_id));
+                    searchSourceBuilder.query(boolQueryBuilder);
+                    searchRequest.source(searchSourceBuilder);
+                    final SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+                    final SearchHits hits = searchResponse.getHits();
+                    if (hits.getTotalHits().value > 0){
+                        for (SearchHit hit : hits.getHits()) {
+                            String id = hit.getId();
+                            UpdateRequest updateRequest = new UpdateRequest(index, id);
+                            Map<String, Object> parameters = new HashMap<>();
+                            parameters.put("late_event_cnt", late_event_cnt);
+                            parameters.put("batch_event_cnt", event_cnt);
 
-                        //indexRequest.source(payload, XContentType.JSON);
-                        restHighLevelClient.update(updateRequest, RequestOptions.DEFAULT);
+                            Script script = new Script(ScriptType.INLINE, "painless", "ctx._source.acc_rt_event_cnt = ctx._source.rt_event_cnt +  params.late_event_cnt;ctx._source.batch_event_cnt = params.batch_event_cnt", parameters);
+                            updateRequest.script(script);
+
+                            //indexRequest.source(payload, XContentType.JSON);
+                            restHighLevelClient.update(updateRequest, RequestOptions.DEFAULT);
+                            successCount.increment();
+                        }
                     }
                 } catch (IOException e) {
                     logger.error("errors occurred in deleting index: ", e);
@@ -156,6 +169,7 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
             if (errorCounter.longValue() > 0){
                 logger.error("the error count is " + errorCounter.longValue());
             }
+            logger.info("successfully update docs: {}", successCount.longValue());
         } catch (IOException e) {
             logger.error("something went wrong: ", e);
             throw new RuntimeException(e);
