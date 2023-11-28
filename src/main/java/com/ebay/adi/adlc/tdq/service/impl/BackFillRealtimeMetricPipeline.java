@@ -125,7 +125,7 @@ public class BackFillRealtimeMetricPipeline extends BasePipeline<BackFillRealtim
             Base64.Encoder encoder = Base64.getEncoder();
             rows.stream().parallel().forEach(row -> {
                 try {
-                    String hr = row.getString(0);
+                    int hr = row.getInt(0);
                     int page_id = row.getInt(1);
                     long event_cnt = row.getLong(2);
                     long late_event_cnt = row.getLong(3);
