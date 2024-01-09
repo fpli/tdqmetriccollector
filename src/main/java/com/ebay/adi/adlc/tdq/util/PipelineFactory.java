@@ -49,6 +49,7 @@ public class PipelineFactory {
         pipelineMap.put("metricCollector", new MetricCollectorPipeline());
         pipelineMap.put("tagProfiling", new TagProfilingPipeline());
         pipelineMap.put("backFillRealtimeMetric", new BackFillRealtimeMetricPipeline());
+        pipelineMap.put("pageMetadataQuality", new PageMetadataQualityPipeline());
     }
 
     private Map<String, BasePipeline<? extends BaseOption>> pipelineMap;

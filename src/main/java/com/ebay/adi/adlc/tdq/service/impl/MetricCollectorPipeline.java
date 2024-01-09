@@ -18,6 +18,11 @@ public class MetricCollectorPipeline extends BasePipeline<MetricCollectorOption>
     }
 
     @Override
+    public <U extends MetricCollectorOption> void process(U parameter) {
+
+    }
+
+    @Override
     public void process(BaseOption parameter) {
         MetricCollectorOption metricCollectorOption = (MetricCollectorOption) parameter;
         //super.process(parameter);
