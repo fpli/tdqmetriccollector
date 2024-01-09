@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
+import java.util.stream.Stream;
 
 public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption> {
     @Override
@@ -49,8 +51,19 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         LocalDateTime localDateTime = LocalDateTime.parse(date, dateTimeFormatter);
         LocalDate localDate = localDateTime.toLocalDate();
         List<Long> pageIds = listUnwantedPageIds(localDate);
+        Stream<String> pageIdStream = pageIds.stream().map(String::valueOf);
         SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
-        String sql = "";
+        String sparkSqlTemplate = "select\n" +
+                "  DISTINCT sojlib.soj_nvl(CLIENT_DATA, 'TPool')\n" +
+                "FROM\n" +
+                "  UBI_V.UBI_EVENT\n" +
+                "WHERE\n" +
+                "  SESSION_START_DT = '%s'\n" +
+                "  AND PAGE_ID IN (%s)";
+        StringJoiner stringJoiner = new StringJoiner(",");
+        pageIdStream.forEach(stringJoiner::add);
+        String pageIdString = stringJoiner.toString();
+        String sql = String.format(sparkSqlTemplate, localDate.toString(), pageIdString);
         Dataset<Row> dataset = spark.sql(sql);
 
     }
