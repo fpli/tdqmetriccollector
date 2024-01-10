@@ -1,6 +1,6 @@
 package com.ebay.adi.adlc.tdq.service.impl;
 
-import com.ebay.adi.adlc.tdq.pojo.PagePoolMapping;
+import com.ebay.adi.adlc.tdq.dto.PagePoolMapping;
 import com.ebay.adi.adlc.tdq.service.BaseOption;
 import com.ebay.adi.adlc.tdq.service.PageMetadataOption;
 import com.ebay.adi.adlc.tdq.util.PipelineFactory;
@@ -11,6 +11,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.Parser;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 
 import java.sql.Connection;
@@ -37,7 +38,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         try {
             CommandLine commandLine = defaultParser.parse(options, args);
             String date = commandLine.getOptionValue("d");
-
+            pageMetadataOption.setDate(date);
         } catch (ParseException e) {
             logger.error("parsing command line arguments {} occurred some errors:", args, e);
             throw new RuntimeException(e);
@@ -66,24 +67,28 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         StringJoiner stringJoiner = new StringJoiner(",");
         pageIdStream.forEach(stringJoiner::add);
         String pageIdString = stringJoiner.toString();
-        String sql = String.format(sparkSqlTemplate, localDate.toString(), pageIdString);
+        String dateString = localDate.toString();
+        String sql = String.format(sparkSqlTemplate, dateString, pageIdString);
         Dataset<Row> dataset = spark.sql(sql);
         List<Row> rows = dataset.collectAsList();
 
         List<PagePoolMapping> pagePoolMappingList = rows.parallelStream().map(row -> {
-            long pageId = row.getInt(0);
+            int pageId = row.getInt(0);
             String poolName = row.getString(1);
-            return new PagePoolMapping(pageId, poolName);
+            return new PagePoolMapping(pageId, poolName, dateString);
         }).collect(Collectors.toList());
 
-        persistence(pagePoolMappingList);
+        new Thread(() -> saveToMySQL(pagePoolMappingList)).start();
+
+        Dataset<Row> rowDataset = spark.createDataFrame(pagePoolMappingList, PagePoolMapping.class);
+        rowDataset.write().mode(SaveMode.Append).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
     }
 
-    private void persistence(List<PagePoolMapping> pagePoolMappingList) {
+    private void saveToMySQL(List<PagePoolMapping> pagePoolMappingList) {
         try {
             Connection connection = PipelineFactory.getInstance().getMySQLConnection();
             connection.setAutoCommit(false);
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into page_pool_tbl(page_id, pool_name) value (?, ?)");
+            PreparedStatement preparedStatement = connection.prepareStatement("insert into t_page_pool_lkp(page_id, pool_name) value (?, ?)");
             for (PagePoolMapping pagePoolMapping : pagePoolMappingList) {
                 preparedStatement.setLong(1, pagePoolMapping.getPageId());
                 preparedStatement.setString(2, pagePoolMapping.getPoolName());
@@ -123,7 +128,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                     "where\n" +
                     "  page_id not in (\n" +
                     "    select\n" +
-                    "      pa ge_id\n" +
+                    "      page_id\n" +
                     "    from\n" +
                     "      profiling_page_lkp\n" +
                     "  )";
