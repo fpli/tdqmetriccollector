@@ -82,7 +82,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         saveToMySQL(pagePoolMappingList);
 
         Dataset<Row> rowDataset = spark.createDataFrame(pagePoolMappingList, PagePoolMapping.class);
-        rowDataset.write().mode(SaveMode.Overwrite).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
+        rowDataset.write().partitionBy("dt").mode(SaveMode.Overwrite).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
     }
 
     private void saveToMySQL(List<PagePoolMapping> pagePoolMappingList) {
