@@ -79,10 +79,23 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
             return new PagePoolMapping(pageId, poolName, dateString);
         }).collect(Collectors.toList());
 
+        cleanUpData(dateString);
         saveToMySQL(pagePoolMappingList);
 
         Dataset<Row> rowDataset = spark.createDataFrame(pagePoolMappingList, PagePoolMapping.class);
         rowDataset.write().partitionBy("dt").mode(SaveMode.Overwrite).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
+    }
+
+    private void cleanUpData(String dateString) {
+        try {
+            Connection connection =  PipelineFactory.getInstance().getMySQLConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement("delete from w_page_pool_lkp where dt = ?");
+            preparedStatement.setString(1, dateString);
+            preparedStatement.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     private void saveToMySQL(List<PagePoolMapping> pagePoolMappingList) {
@@ -98,8 +111,8 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
             }
             int[] results = preparedStatement.executeBatch();
             System.out.println(Arrays.toString(results));
-            preparedStatement.close();
             connection.commit();
+            preparedStatement.close();
             connection.close();
         } catch (Exception e) {
             logger.error("insert into page_pool_tbl occurs exception: {0}", e);
