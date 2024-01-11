@@ -33,4 +33,12 @@ public class PagePoolMapping implements Serializable {
     public void setPoolName(String poolName) {
         this.pool_name = poolName;
     }
+
+    public String getDt() {
+        return dt;
+    }
+
+    public void setDt(String dt) {
+        this.dt = dt;
+    }
 }

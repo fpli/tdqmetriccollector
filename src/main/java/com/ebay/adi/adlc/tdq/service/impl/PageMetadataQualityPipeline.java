@@ -54,7 +54,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         LocalDateTime localDateTime = LocalDateTime.parse(date, dateTimeFormatter);
         LocalDate localDate = localDateTime.toLocalDate();
-        List<Long> pageIds = listUnwantedPageIds(localDate);
+        List<Long> pageIds = listUnregisteredPageIds(localDate);
         Stream<String> pageIdStream = pageIds.stream().map(String::valueOf);
         SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
         String sparkSqlTemplate = "select\n" +
@@ -88,10 +88,11 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         try {
             Connection connection = PipelineFactory.getInstance().getMySQLConnection();
             connection.setAutoCommit(false);
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into t_page_pool_lkp(page_id, pool_name) value (?, ?)");
+            PreparedStatement preparedStatement = connection.prepareStatement("insert into w_page_pool_lkp(page_id, pool_name, dt) value (?, ?, ?)");
             for (PagePoolMapping pagePoolMapping : pagePoolMappingList) {
                 preparedStatement.setLong(1, pagePoolMapping.getPageId());
                 preparedStatement.setString(2, pagePoolMapping.getPoolName());
+                preparedStatement.setString(3, pagePoolMapping.getDt());
                 preparedStatement.addBatch();
             }
             preparedStatement.executeBatch();
@@ -104,7 +105,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         }
     }
 
-    private List<Long> listUnwantedPageIds(LocalDate localDate) {
+    private List<Long> listUnregisteredPageIds(LocalDate localDate) {
         try {
             Connection connection = PipelineFactory.getInstance().getMySQLConnection();
             String sqlTemplate = "select\n" +
