@@ -135,7 +135,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                     "  )";
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
             String dt = dateTimeFormatter.format(localDate);
-            String actualSql = String.format(sqlTemplate, dt);
+            String actualSql = String.format(sqlTemplate, dt, dt);
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(actualSql);
             List<Long> pageIds = new ArrayList<>();
