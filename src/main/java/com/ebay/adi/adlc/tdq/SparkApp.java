@@ -24,7 +24,7 @@ public class SparkApp {
 
         SparkSession spark = SparkSession
                 .builder()
-                .config("hive.exec.dynamic.partition", "dynamic")
+                .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
                 .config("hive.exec.dynamic.partition.mode", "nonstrict")
                 .config(sparkConf)
                 .enableHiveSupport()

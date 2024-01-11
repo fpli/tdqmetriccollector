@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -78,10 +79,10 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
             return new PagePoolMapping(pageId, poolName, dateString);
         }).collect(Collectors.toList());
 
-        new Thread(() -> saveToMySQL(pagePoolMappingList)).start();
+        saveToMySQL(pagePoolMappingList);
 
         Dataset<Row> rowDataset = spark.createDataFrame(pagePoolMappingList, PagePoolMapping.class);
-        rowDataset.write().mode(SaveMode.Append).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
+        rowDataset.write().mode(SaveMode.Overwrite).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
     }
 
     private void saveToMySQL(List<PagePoolMapping> pagePoolMappingList) {
@@ -95,12 +96,14 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                 preparedStatement.setString(3, pagePoolMapping.getDt());
                 preparedStatement.addBatch();
             }
-            preparedStatement.executeBatch();
-            connection.commit();
+            int[] results = preparedStatement.executeBatch();
+            System.out.println(Arrays.toString(results));
             preparedStatement.close();
+            connection.commit();
             connection.close();
         } catch (Exception e) {
             logger.error("insert into page_pool_tbl occurs exception: {0}", e);
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
