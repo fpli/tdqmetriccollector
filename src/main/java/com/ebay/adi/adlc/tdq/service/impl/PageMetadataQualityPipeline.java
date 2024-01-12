@@ -21,10 +21,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,7 +52,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         LocalDateTime localDateTime = LocalDateTime.parse(date, dateTimeFormatter);
         LocalDate localDate = localDateTime.toLocalDate();
-        List<Long> pageIds = listUnregisteredPageIds(localDate);
+        List<Long> pageIds = listUnregisteredPageIdsFromHive(localDate);
         Stream<String> pageIdStream = pageIds.stream().map(String::valueOf);
         SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
         String sparkSqlTemplate = "select\n" +
@@ -165,6 +162,44 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
             return pageIds;
         } catch (Exception e) {
             logger.error("listUnwantedPageIds occurs exception: {0}", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<Long> listUnregisteredPageIdsFromHive(LocalDate localDate) {
+        try {
+            SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
+            String sqlTemplate = "SELECT\n" +
+                    "  page_id\n" +
+                    "FROM\n" +
+                    "  (\n" +
+                    "    SELECT\n" +
+                    "      page_id,\n" +
+                    "      sum(event_cnt)\n" +
+                    "    FROM\n" +
+                    "      ubi_w.soj_page_trfc_w\n" +
+                    "    WHERE\n" +
+                    "      dt = '%s'\n" +
+                    "      GROUP BY page_id\n" +
+                    "  ) t\n" +
+                    "WHERE\n" +
+                    "  t.page_id NOT IN (\n" +
+                    "    SELECT\n" +
+                    "      DISTINCT page_id\n" +
+                    "    from\n" +
+                    "      GDW_TABLES.DW_SOJ_LKP_PAGE\n" +
+                    "  )";
+            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+            String dt = dateTimeFormatter.format(localDate);
+            String actualSql = String.format(sqlTemplate, dt);
+            Dataset<Row> dataset = spark.sql(actualSql);
+            List<Row> rows = dataset.collectAsList();
+            if (rows.isEmpty()){
+               return Collections.emptyList();
+            }
+            return rows.stream().map(row -> Long.valueOf(row.getInt(0))).collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("listUnregisteredPageIdsFromHive occurs exception: {0}", e);
             throw new RuntimeException(e);
         }
     }
