@@ -7,12 +7,12 @@ public class PagePoolMapping implements Serializable {
     private Integer page_id;
     private String pool_name;
 
-    private String ts;
+    private String dt;
 
-    public PagePoolMapping(Integer page_id, String pool_name, String ts) {
+    public PagePoolMapping(Integer page_id, String pool_name, String dt) {
         this.page_id = page_id;
         this.pool_name = pool_name;
-        this.ts = ts;
+        this.dt = dt;
     }
 
     public PagePoolMapping() {
@@ -35,10 +35,10 @@ public class PagePoolMapping implements Serializable {
     }
 
     public String getDt() {
-        return ts;
+        return dt;
     }
 
     public void setDt(String dt) {
-        this.ts = dt;
+        this.dt = dt;
     }
 }
