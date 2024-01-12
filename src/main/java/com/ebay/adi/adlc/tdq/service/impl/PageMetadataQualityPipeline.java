@@ -9,10 +9,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.Parser;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SaveMode;
-import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -80,8 +77,21 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         saveToMySQL(pagePoolMappingList);
 
         Dataset<Row> rowDataset = spark.createDataFrame(pagePoolMappingList, PagePoolMapping.class);
-
-        rowDataset.write().mode(SaveMode.Append).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
+        try {
+            rowDataset.createTempView("page_pool_view");
+            String insertSql = "INSERT OVERWRITE TABLE ubi_w.tdq_page_metadata_quality_w partition(dt = '%s')\n" +
+                    "SELECT\n" +
+                    "  page_id,\n" +
+                    "  pool_name\n" +
+                    "FROM\n" +
+                    "  page_pool_view";
+            String actualSQL = String.format(insertSql, dateString);
+            spark.sql(actualSQL);
+        } catch (AnalysisException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        //rowDataset.write().mode(SaveMode.Append).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
     }
 
     private void cleanUpData(String dateString) {
