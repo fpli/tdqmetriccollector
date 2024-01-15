@@ -9,7 +9,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.Parser;
-import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -108,27 +107,26 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
             pagePoolMapping.setPageId(pageId);
             pagePoolMapping.setTraffic(traffic);
             pagePoolMapping.setPoolName(poolName);
-            pagePoolMapping.setDt(dateString);
             return pagePoolMapping;
         }).collect(Collectors.toList());
 
         cleanUpData(dateString);
-        //saveToMySQL(pagePoolMappingList);
+        saveToMySQL(pagePoolMappingList, dateString);
 
 
         Dataset<Row> rowDataset = spark.createDataFrame(pagePoolMappingList, PagePoolMapping.class);
         try {
             rowDataset.registerTempTable("page_pool_view");
             spark.sql("select * from page_pool_view").show();
-//            rowDataset.createTempView("page_pool_view");
-//            String insertSql = "INSERT OVERWRITE TABLE ubi_w.tdq_page_metadata_quality_w partition(dt = '%s')\n" +
-//                    "SELECT\n" +
-//                    "  page_id,\n" +
-//                    "  pool_name\n" +
-//                    "FROM\n" +
-//                    "  page_pool_view";
-//            String actualSQL = String.format(insertSql, dateString);
-//            spark.sql(actualSQL);
+            String insertSql = "INSERT OVERWRITE TABLE ubi_w.tdq_page_metadata_quality_w partition(dt = '%s')\n" +
+                    "SELECT\n" +
+                    "  page_id,\n" +
+                    "  traffic,\n" +
+                    "  pool_name\n" +
+                    "FROM\n" +
+                    "  page_pool_view";
+            String actualSQL = String.format(insertSql, dateString);
+            spark.sql(actualSQL);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -148,7 +146,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
 
     }
 
-    private void saveToMySQL(List<PagePoolMapping> pagePoolMappingList) {
+    private void saveToMySQL(List<PagePoolMapping> pagePoolMappingList, String dateString) {
         try {
             Connection connection = PipelineFactory.getInstance().getMySQLConnection();
             connection.setAutoCommit(false);
@@ -157,7 +155,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                 preparedStatement.setLong(1, pagePoolMapping.getPageId());
                 preparedStatement.setLong(2, pagePoolMapping.getTraffic());
                 preparedStatement.setString(3, pagePoolMapping.getPoolName());
-                preparedStatement.setString(4, pagePoolMapping.getDt());
+                preparedStatement.setString(4, dateString);
                 preparedStatement.addBatch();
             }
             int[] results = preparedStatement.executeBatch();

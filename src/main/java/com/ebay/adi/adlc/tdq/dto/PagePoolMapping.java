@@ -9,9 +9,6 @@ public class PagePoolMapping implements Serializable {
     private long traffic;
     private String pool_name;
 
-    private String dt;
-
-
     public PagePoolMapping() {
     }
 
@@ -39,11 +36,4 @@ public class PagePoolMapping implements Serializable {
         this.pool_name = poolName;
     }
 
-    public String getDt() {
-        return dt;
-    }
-
-    public void setDt(String dt) {
-        this.dt = dt;
-    }
 }
