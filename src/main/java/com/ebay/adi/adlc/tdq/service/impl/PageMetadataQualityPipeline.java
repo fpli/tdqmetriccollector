@@ -117,12 +117,12 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         Dataset<Row> rowDataset = spark.createDataFrame(pagePoolMappingList, PagePoolMapping.class);
         try {
             rowDataset.registerTempTable("page_pool_view");
-            spark.sql("select * from page_pool_view").show();
+            //spark.sql("select * from page_pool_view").show();
             String insertSql = "INSERT OVERWRITE TABLE ubi_w.tdq_page_metadata_quality_w partition(dt = '%s')\n" +
                     "SELECT\n" +
-                    "  page_id,\n" +
+                    "  pageId,\n" +
                     "  traffic,\n" +
-                    "  pool_name\n" +
+                    "  poolName\n" +
                     "FROM\n" +
                     "  page_pool_view";
             String actualSQL = String.format(insertSql, dateString);
