@@ -9,7 +9,10 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.Parser;
-import org.apache.spark.sql.*;
+import org.apache.spark.sql.AnalysisException;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,9 +21,11 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption> {
     @Override
@@ -49,45 +54,82 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         LocalDateTime localDateTime = LocalDateTime.parse(date, dateTimeFormatter);
         LocalDate localDate = localDateTime.toLocalDate();
-        List<Long> pageIds = listUnregisteredPageIdsFromHive(localDate);
-        Stream<String> pageIdStream = pageIds.stream().map(String::valueOf);
+        DateTimeFormatter dateTimeFormatter1 = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String dt = dateTimeFormatter1.format(localDate);
         SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
-        String sparkSqlTemplate = "select\n" +
-                "  DISTINCT PAGE_ID, sojlib.soj_nvl(CLIENT_DATA, 'TPool')\n" +
-                "FROM\n" +
-                "  UBI_V.UBI_EVENT\n" +
-                "WHERE\n" +
-                "  SESSION_START_DT = '%s'\n" +
-                "  AND PAGE_ID IN (%s)";
-        StringJoiner stringJoiner = new StringJoiner(",");
-        pageIdStream.forEach(stringJoiner::add);
-        String pageIdString = stringJoiner.toString();
+        String sparkSqlTemplate = "SELECT\n" +
+                                    "  t1.page_id,\n" +
+                                    "  t1.traffic,\n" +
+                                    "  t2.pool_name\n" +
+                                    "FROM\n" +
+                                    "  (\n" +
+                                    "    SELECT\n" +
+                                    "      page_id,\n" +
+                                    "      traffic\n" +
+                                    "    FROM\n" +
+                                    "      (\n" +
+                                    "        SELECT\n" +
+                                    "          page_id,\n" +
+                                    "          sum(event_cnt) traffic\n" +
+                                    "        FROM\n" +
+                                    "          ubi_w.soj_page_trfc_w\n" +
+                                    "        WHERE\n" +
+                                    "          dt = '%s'\n" +
+                                    "          GROUP BY page_id\n" +
+                                    "      ) t\n" +
+                                    "    WHERE\n" +
+                                    "      t.page_id NOT IN (\n" +
+                                    "        SELECT\n" +
+                                    "          DISTINCT page_id\n" +
+                                    "        from\n" +
+                                    "          GDW_TABLES.DW_SOJ_LKP_PAGE\n" +
+                                    "      )\n" +
+                                    "  ) t1\n" +
+                                    "  JOIN (\n" +
+                                    "    select\n" +
+                                    "      DISTINCT PAGE_ID,\n" +
+                                    "      sojlib.soj_nvl(CLIENT_DATA, 'TPool') pool_name\n" +
+                                    "    FROM\n" +
+                                    "      UBI_V.UBI_EVENT\n" +
+                                    "    WHERE\n" +
+                                    "      SESSION_START_DT = '%s'\n" +
+                                    "  ) t2 ON t1.page_id = t2.page_id";
+
         String dateString = localDate.toString();
-        String sql = String.format(sparkSqlTemplate, dateString, pageIdString);
+        String sql = String.format(sparkSqlTemplate, dt, dateString);
         Dataset<Row> dataset = spark.sql(sql);
         List<Row> rows = dataset.collectAsList();
 
         List<PagePoolMapping> pagePoolMappingList = rows.parallelStream().map(row -> {
             int pageId = row.getInt(0);
-            String poolName = row.getString(1);
-            return new PagePoolMapping(pageId, poolName, dateString);
+            long traffic = row.getLong(1);
+            String poolName = row.getString(2);
+            PagePoolMapping pagePoolMapping = new PagePoolMapping();
+            pagePoolMapping.setPageId(pageId);
+            pagePoolMapping.setTraffic(traffic);
+            pagePoolMapping.setPoolName(poolName);
+            pagePoolMapping.setDt(dateString);
+            return pagePoolMapping;
         }).collect(Collectors.toList());
 
         cleanUpData(dateString);
-        saveToMySQL(pagePoolMappingList);
+        //saveToMySQL(pagePoolMappingList);
+
 
         Dataset<Row> rowDataset = spark.createDataFrame(pagePoolMappingList, PagePoolMapping.class);
         try {
-            rowDataset.createTempView("page_pool_view");
-            String insertSql = "INSERT OVERWRITE TABLE ubi_w.tdq_page_metadata_quality_w partition(dt = '%s')\n" +
-                    "SELECT\n" +
-                    "  page_id,\n" +
-                    "  pool_name\n" +
-                    "FROM\n" +
-                    "  page_pool_view";
-            String actualSQL = String.format(insertSql, dateString);
-            spark.sql(actualSQL);
-        } catch (AnalysisException e) {
+            rowDataset.registerTempTable("page_pool_view");
+            spark.sql("select * from page_pool_view").show();
+//            rowDataset.createTempView("page_pool_view");
+//            String insertSql = "INSERT OVERWRITE TABLE ubi_w.tdq_page_metadata_quality_w partition(dt = '%s')\n" +
+//                    "SELECT\n" +
+//                    "  page_id,\n" +
+//                    "  pool_name\n" +
+//                    "FROM\n" +
+//                    "  page_pool_view";
+//            String actualSQL = String.format(insertSql, dateString);
+//            spark.sql(actualSQL);
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
@@ -110,11 +152,12 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         try {
             Connection connection = PipelineFactory.getInstance().getMySQLConnection();
             connection.setAutoCommit(false);
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into w_page_pool_lkp(page_id, pool_name, dt) value (?, ?, ?)");
+            PreparedStatement preparedStatement = connection.prepareStatement("insert into w_page_pool_lkp(page_id, traffic, pool_name, dt) value (?, ?, ?, ?)");
             for (PagePoolMapping pagePoolMapping : pagePoolMappingList) {
                 preparedStatement.setLong(1, pagePoolMapping.getPageId());
-                preparedStatement.setString(2, pagePoolMapping.getPoolName());
-                preparedStatement.setString(3, pagePoolMapping.getDt());
+                preparedStatement.setLong(2, pagePoolMapping.getTraffic());
+                preparedStatement.setString(3, pagePoolMapping.getPoolName());
+                preparedStatement.setString(4, pagePoolMapping.getDt());
                 preparedStatement.addBatch();
             }
             int[] results = preparedStatement.executeBatch();
