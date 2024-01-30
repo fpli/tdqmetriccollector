@@ -92,7 +92,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                                     "      UBI_V.UBI_EVENT\n" +
                                     "    WHERE\n" +
                                     "      SESSION_START_DT = '%s'\n" +
-                                    "  ) t2 ON t1.page_id = t2.page_id";
+                                    "  ) t2 ON t1.page_id = t2.page_id WHERE t2.pool_name IS NOT NULL";
 
         String dateString = localDate.toString();
         String sql = String.format(sparkSqlTemplate, dt, dateString);
