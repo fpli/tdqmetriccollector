@@ -55,6 +55,71 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         LocalDate localDate = localDateTime.toLocalDate();
         DateTimeFormatter dateTimeFormatter1 = DateTimeFormatter.ofPattern("yyyyMMdd");
         String dt = dateTimeFormatter1.format(localDate);
+        generateUnregisteredPagesOutsideProduction(localDate, dt);
+        generateUnregisteredPagesInsideProduction(localDate);
+    }
+
+    private void generateUnregisteredPagesInsideProduction(LocalDate localDate) {
+        SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
+        String sparkSqlTemplate = "SELECT\n" +
+                "  e.page_id,\n" +
+                "  sojlib.soj_nvl(CLIENT_DATA, 'TPool') pool_name,\n" +
+                "  CASE\n" +
+                "    WHEN ptrack.lfcycl_state_id = 1 THEN 'New'\n" +
+                "    WHEN ptrack.lfcycl_state_id = 3 THEN 'Deployed'\n" +
+                "    WHEN ptrack.lfcycl_state_id = 4 THEN 'Deprecated'\n" +
+                "    WHEN ptrack.lfcycl_state_id = 5 THEN 'Retired'\n" +
+                "    WHEN ptrack.lfcycl_state_id = 6 THEN 'Disabled'\n" +
+                "    ELSE 'TBD'\n" +
+                "  END AS state,\n" +
+                "  SUM(1) AS traffic\n" +
+                " FROM\n" +
+                "  UBI_V.UBI_EVENT e\n" +
+                "  INNER JOIN ACCESS_VIEWS.DW_SOJ_TRACK_PAGE ptrack ON (e.page_id = ptrack.page_id)\n" +
+                " WHERE\n" +
+                "  e.session_start_dt = '%s'\n" +
+                "  AND rdt = 0\n" +
+                "  AND ptrack.lfcycl_state_id IN (1, 6)\n" +
+                "  GROUP BY 1, 2, 3 " +
+                "  HAVING pool_name IS NOT NULL";
+
+        String dateString = localDate.toString();
+        String sql = String.format(sparkSqlTemplate, dateString);
+        Dataset<Row> dataset = spark.sql(sql);
+        List<Row> rows = dataset.collectAsList();
+        if (!rows.isEmpty()){
+            String environment = "Production";
+            try {
+                Connection connection = PipelineFactory.getInstance().getMySQLConnection();
+                connection.setAutoCommit(false);
+                PreparedStatement preparedStatement = connection.prepareStatement("insert into w_page_pool_lkp(page_id, environment, state, traffic, pool_name, dt) value (?, ?, ?, ?, ?, ?)");
+                for (Row row : rows) {
+                    long page_id = row.getInt(0);
+                    String poolName = row.getString(1);
+                    String state = row.getString(2);
+                    long traffic = row.getLong(3);
+                    preparedStatement.setLong(1, page_id);
+                    preparedStatement.setString(2, environment);
+                    preparedStatement.setString(3, state);
+                    preparedStatement.setLong(4, traffic);
+                    preparedStatement.setString(5, poolName);
+                    preparedStatement.setString(6, dateString);
+                    preparedStatement.addBatch();
+                }
+                int[] results = preparedStatement.executeBatch();
+                System.out.println(Arrays.toString(results));
+                connection.commit();
+                preparedStatement.close();
+                connection.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error("insert into page_pool_tbl occurs exception: {0}", e);
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void generateUnregisteredPagesOutsideProduction(LocalDate localDate, String dt) {
         SparkSession spark = SparkSessionStore.getInstance().getSparkSession();
         String sparkSqlTemplate = "SELECT\n" +
                                     "  t1.page_id,\n" +
@@ -127,11 +192,11 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                     "  page_pool_view";
             String actualSQL = String.format(insertSql, dateString);
             spark.sql(actualSQL);
+            // rowDataset.write().mode(SaveMode.Append).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        //rowDataset.write().mode(SaveMode.Append).option("path", "viewfs://apollo-rno/sys/edw/working/ubi/ubi_w/tdq/tdq_page_metadata_quality_w").insertInto("ubi_w.tdq_page_metadata_quality_w");
     }
 
     private void cleanUpData(String dateString) {
@@ -143,7 +208,6 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private void saveToMySQL(List<PagePoolMapping> pagePoolMappingList, String dateString) {
