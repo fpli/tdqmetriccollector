@@ -107,7 +107,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                     preparedStatement.addBatch();
                 }
                 int[] results = preparedStatement.executeBatch();
-                System.out.println(Arrays.toString(results));
+                logger.info(Arrays.toString(results));
                 connection.commit();
                 preparedStatement.close();
                 connection.close();
