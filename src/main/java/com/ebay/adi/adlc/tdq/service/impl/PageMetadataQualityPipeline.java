@@ -81,7 +81,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                 "  AND rdt = 0\n" +
                 "  AND ptrack.lfcycl_state_id IN (1, 6)\n" +
                 "  GROUP BY 1, 2, 3 " +
-                "  HAVING pool_name IS NOT NULL";
+                "  HAVING pool_name IS NOT NULL AND traffic > 100";
 
         String dateString = localDate.toString();
         String sql = String.format(sparkSqlTemplate, dateString);
