@@ -147,7 +147,7 @@ public class PageMetadataQualityPipeline extends BasePipeline<PageMetadataOption
                                     "          DISTINCT page_id\n" +
                                     "        from\n" +
                                     "          GDW_TABLES.DW_SOJ_LKP_PAGE\n" +
-                                    "      )\n" +
+                                    "      ) AND t.traffic > 1000 \n" +
                                     "  ) t1\n" +
                                     "  JOIN (\n" +
                                     "    select\n" +
